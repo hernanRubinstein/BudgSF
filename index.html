@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="תקציב SF">
+<title>מחשבון תקציבי ראינן</title>
+<style>
+  :root{
+    --bg:#E9EDEC; --surface:#fff; --alt:#F4F7F6; --ink:#182524; --muted:#5E6E6B;
+    --line:#D6DDDB; --teal:#137567; --rent:#2A4A54; --living:#7A9A93;
+    --israel:#C98A3B; --deficit:#B4432E;
+  }
+  *{box-sizing:border-box}
+  html,body{overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px 16px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+  .appheader{background:linear-gradient(135deg,#17423B 0%,#0F2A26 100%);
+    margin:0 -16px 16px;padding:calc(20px + env(safe-area-inset-top)) 20px 18px}
+  .appheader h1{font-family:Georgia,"Times New Roman",serif;color:#fff;font-size:25px;font-weight:600;margin:0 0 5px;letter-spacing:-.01em}
+  .appsub{color:#fff;opacity:.82;font-size:14px;font-weight:500}
+  .syncbadge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#fff;opacity:.92}
+  .syncdot{width:8px;height:8px;border-radius:50%;background:#9AA7A4;flex:none}
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:14px;font-weight:600;
+    background:var(--surface);border:1px solid var(--line);color:var(--muted);cursor:pointer;user-select:none}
+  .tab.active{background:var(--teal);border-color:var(--teal);color:#fff}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+  .ctitle{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:12px}
+  .sticky{position:sticky;top:0;z-index:10;box-shadow:0 4px 14px rgba(24,37,36,.08)}
+  .row{display:flex;justify-content:space-between;align-items:baseline}
+  .fig-l{font-size:12px;color:var(--muted);font-weight:500}
+  .fig-v{font-size:20px;font-weight:600}
+  .result{border-radius:10px;padding:12px;margin-top:12px}
+  .result .big{font-size:30px;font-weight:600}
+  .sub{font-size:12px;color:var(--muted);text-align:left;margin-top:4px}
+  .bar{display:flex;width:100%;height:14px;border-radius:8px;overflow:hidden;background:var(--alt);margin-top:12px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:12px;color:var(--muted)}
+  .key{display:flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--teal);
+    color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:16px}
+  .btn:active{opacity:.9}
+  label.fld{display:block;font-size:14px;margin:0 0 6px}
+  input[type=number],input[type=text]{width:100%;border:1px solid var(--line);
+    background:var(--alt);color:var(--ink);border-radius:10px;padding:9px 12px;font-size:14px}
+  input[type=number]{font-family:ui-monospace,Menlo,monospace}
+  input[type=range]{width:100%;accent-color:var(--teal)}
+  .fldwrap{margin-bottom:12px}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .slrow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .slval{font-size:18px;font-weight:600}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:12px;cursor:pointer}
+  .chk input{width:16px;height:16px;accent-color:var(--teal)}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;margin:16px 0 40px}
+  .catbar{display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px}
+  .addcat{border:1px solid var(--teal);background:#EAF3F1;color:var(--teal);border-radius:16px;
+    padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .catcell{padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;background:var(--surface)}
+  .catname-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  #catList input.catname{flex:1 1 0;min-width:0;width:auto;font-size:14px;font-weight:600;
+    background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:right}
+  .catdel{flex:none;border:1px solid var(--line);background:none;color:var(--deficit);
+    border-radius:8px;padding:7px 11px;font-size:14px;font-weight:700;cursor:pointer;line-height:1}
+  .catdel:active{background:var(--alt)}
+  .catrow2{display:flex;align-items:flex-end;gap:8px}
+  .catbox{flex:1 1 0;min-width:0}
+  .caplbl{font-size:10px;color:var(--muted);margin-bottom:4px;text-align:center;font-weight:600}
+  #catList input.catdelta{flex:none;width:100%;text-align:center;font-size:15px;padding:8px 6px}
+  .catpm{flex:none;width:44px;height:42px;display:flex;flex-direction:column;gap:3px}
+  .catpm button{flex:1;border:1px solid var(--line);background:var(--alt);border-radius:7px;
+    font-size:16px;font-weight:800;color:var(--teal);cursor:pointer;line-height:1;padding:0}
+  .catpm button:active{background:#E1E9E7}
+  .catupdated{height:42px;display:flex;align-items:center;justify-content:center;
+    background:#ECEFEE;border:1px solid var(--line);border-radius:10px;font-size:15px;font-weight:700;
+    font-variant-numeric:tabular-nums;color:var(--ink)}
+  .piewrap{margin-top:18px}
+  .pielegend{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:14px}
+  .pieit{display:flex;align-items:center;gap:5px;font-size:11px;min-width:0}
+  .pdot{width:9px;height:9px;border-radius:2px;flex:none}
+  .pname{flex:1;min-width:0;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ppct{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+  .monthcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .monthhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .monthlabel{font-size:15px;font-weight:600}
+  .monthdate{font-size:12px;color:var(--muted)}
+  .monthsur{font-size:16px;font-weight:600}
+  .del{background:none;border:1px solid var(--line);color:var(--muted);font-size:13px;font-weight:600;
+    cursor:pointer;padding:6px 12px;border-radius:8px;margin-right:8px}
+  .vgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:12px}
+  .vcell{text-align:center}
+  .vname{font-size:11px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:4px}
+  .vdot{width:7px;height:7px;border-radius:2px;display:inline-block}
+  .vnum{font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}
+  .vmut{color:var(--muted)}
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px;line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:22px;font-size:14px;opacity:0;transition:opacity .3s;z-index:70;
+    display:flex;align-items:center;max-width:92%;pointer-events:none}
+  .toast.show{opacity:1;pointer-events:auto}
+  .toastbtn{margin-right:12px;background:none;border:1px solid #fff;color:#fff;border-radius:14px;
+    padding:3px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;flex-direction:column;
+    align-items:center;justify-content:center;padding:20px;z-index:60}
+  .overlay.show{display:flex}
+  .overlay img{max-width:100%;max-height:60vh;border-radius:12px}
+  .overlay p{color:#fff;font-size:14px;margin:14px 0 0;text-align:center;line-height:1.5}
+  .ovbtns{display:flex;gap:10px;margin-top:16px}
+  .ovbtns button{border:none;border-radius:10px;padding:11px 22px;font-weight:700;font-size:15px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="appheader">
+    <h1>מחשבון תקציבי ראינן</h1>
+    <div class="appsub" id="appDate">תאריך:</div>
+    <div class="syncbadge" id="syncBadge"><span class="syncdot" id="syncDot"></span><span id="syncText">מתחבר…</span></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabCalc">מחשבון</div>
+    <div class="tab" id="tabTrack">מעקב חודשי</div>
+  </div>
+
+  <div id="viewCalc">
+    <div class="card sticky">
+      <div class="row">
+        <div><div class="fig-l">הכנסה נטו / חודש</div><div class="fig-v mono" id="oInc">$0</div></div>
+        <div style="text-align:left"><div class="fig-l">הוצאות / חודש</div><div class="fig-v mono" id="oExp">$0</div></div>
+      </div>
+      <div class="result" id="resBox">
+        <div class="row">
+          <span class="fig-l" id="resLbl">פנוי לחיסכון / חודש</span>
+          <span class="big mono" id="oSur">$0</span>
+        </div>
+        <div class="sub mono" id="oYear">$0 לשנה</div>
+      </div>
+      <div class="bar">
+        <div id="bRent" style="background:var(--rent)"></div>
+        <div id="bLiving" style="background:var(--living)"></div>
+        <div id="bIsrael" style="background:var(--israel)"></div>
+        <div id="bLast"></div>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="dot" style="background:var(--rent)"></span>דיור</span>
+        <span class="key"><span class="dot" style="background:var(--living)"></span>מחיה</span>
+        <span class="key"><span class="dot" style="background:var(--israel)"></span>החזר לישראל</span>
+        <span class="key"><span class="dot" id="kLast"></span><span id="kLastT">חיסכון</span></span>
+      </div>
+    </div>
+
+    <button class="btn" id="sumBtn">📸 סכם חודש ושמור תמונה</button>
+
+    <div class="card">
+      <div class="ctitle">הוצאות חודשיות</div>
+      <div class="slrow"><label class="fld" style="margin:0">שכר דירה</label>
+        <span class="slval mono" id="oRent">$3,000</span></div>
+      <input type="range" id="rent" min="2000" max="4500" step="50" value="3000">
+      <div class="hint" id="hRent"></div>
+
+      <div class="catbar">
+        <span class="ctitle" style="margin:0">מחיה</span>
+        <button class="addcat" id="addCat" type="button">+ הוסף קטגוריה</button>
+      </div>
+      <div id="catList"></div>
+
+      <div class="piewrap">
+        <div class="ctitle">התפלגות כלל ההוצאות</div>
+        <div style="display:flex;justify-content:center"><canvas id="pieCanvas"></canvas></div>
+        <div id="pieLegend" class="pielegend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">הכנסה</div>
+      <div class="fldwrap"><label class="fld">מלגת EMBO — שנתי (€)</label>
+        <input type="number" id="embo" value="65400"><div class="hint" id="hEmbo"></div></div>
+      <div class="fldwrap"><label class="fld">שער €→$</label>
+        <input type="number" id="eurusd" value="1.14" step="0.01"></div>
+      <div class="slrow"><label class="fld" style="margin:0">עמלת המרה</label>
+        <span class="slval mono" id="oFee">1%</span></div>
+      <input type="range" id="fee" min="0" max="3" step="0.25" value="1">
+      <div class="hint mono" id="hStipend"></div>
+      <label class="chk"><input type="checkbox" id="spouseWorks">בן/בת הזוג עובד/ת (J-2 EAD)</label>
+      <div class="fldwrap" id="spouseWrap" style="display:none;margin-top:12px">
+        <label class="fld">הכנסה חודשית נטו של בן/בת הזוג ($)</label>
+        <input type="number" id="spouseIncome" value="2500"></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">החזר חובות לישראל</div>
+      <div class="fldwrap"><label class="fld">החזר חודשי (₪)</label>
+        <input type="number" id="ils" value="2000"></div>
+      <div class="fldwrap"><label class="fld">שער דולר (₪ ל‑$1)</label>
+        <input type="number" id="usdils" value="3.05" step="0.01"><div class="hint mono" id="hIsrael"></div></div>
+    </div>
+
+    <p class="note">שערים לפי נתוני שוק, יולי 2026 (€1≈$1.14, $1≈₪3.05). הביטוחים שה‑PI מכסה אינם בתקציב הזה. אלה אומדנים לתכנון בלבד, לא ייעוץ פיננסי — השער בפועל ייקבע ביום ההמרה, בניכוי עמלות.</p>
+  </div>
+
+  <div id="viewTrack" style="display:none">
+    <div class="card">
+      <div class="ctitle">התפלגות הוצאות חודשית</div>
+      <div class="legend">
+        <span class="key"><span class="dot" style="background:var(--rent)"></span>דיור</span>
+        <span class="key"><span class="dot" style="background:var(--living)"></span>מחיה</span>
+        <span class="key"><span class="dot" style="background:var(--israel)"></span>החזר לישראל</span>
+        <span class="key"><span class="dot" style="background:var(--teal)"></span>חיסכון</span>
+        <span class="key"><span class="dot" style="background:var(--deficit)"></span>חריגה</span>
+      </div>
+      <div class="hint" style="margin-top:8px">תחת כל סרגל: הערך של כל פלח ב‑$ / ₪ / €.</div>
+    </div>
+    <div id="trackList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay">
+  <img id="ovImg" alt="סיכום חודשי">
+  <p>לחיצה ארוכה על התמונה כדי לשמור לגלריה,<br>או השתמש בחלון השיתוף שנפתח.</p>
+  <div class="ovbtns">
+    <button id="ovUndo" style="background:var(--deficit);color:#fff">בטל שמירה</button>
+    <button id="ovClose" style="background:#fff;color:var(--ink)">סגור</button>
+  </div>
+</div>
+
+<!-- Firebase (compat) via CDN — if it fails to load, the app runs local-only -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const num = id => parseFloat($(id).value) || 0;
+  const usd = n => (n<0?"-$":"$") + Math.round(Math.abs(n)).toLocaleString("en-US");
+  const eur = n => "€" + Math.round(n).toLocaleString("en-US");
+  const fmt = n => n.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1});
+  const comma = n => Number(n).toLocaleString("en-US");
+  const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const heMonths=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const LIVING_RAMP=['#7A9A93','#5E8B82','#A7C2BB','#4B6A72','#8FB0A8','#6E8C86','#93A9A2','#3E6B63','#B0C4BE','#557A72','#79A69C','#456560'];
+
+  let livingCats=[
+    {id:1,name:'חשבונות + אינטרנט',value:230},
+    {id:2,name:'מכולת',value:800},
+    {id:3,name:'אוכל בחוץ',value:300},
+    {id:4,name:'תחבורה',value:200},
+    {id:5,name:'טלפון',value:70},
+    {id:6,name:'בריאות',value:100},
+    {id:7,name:'ביטוח דיירים',value:20},
+    {id:8,name:'שונות',value:250}
+  ];
+  let hist=[];
+
+  const SKEY='sfBudgetSettings', HKEY='sfBudgetHistory';
+
+  // ---------- Firebase sync ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXbp60wPIRbm0ykxRmVtz8wGFzEUvqa8Y",
+    authDomain: "sf-budget-6d4e4.firebaseapp.com",
+    databaseURL: "https://sf-budget-6d4e4-default-rtdb.firebaseio.com",
+    projectId: "sf-budget-6d4e4",
+    storageBucket: "sf-budget-6d4e4.firebasestorage.app",
+    messagingSenderId: "814158072554",
+    appId: "1:814158072554:web:8ff2271df5b1b2a35fe593",
+    measurementId: "G-0LJRZMESV1"
+  };
+  const SYNC_PATH='budget/shared';
+  const MY_ID=Math.random().toString(36).slice(2);
+  let db=null, applyingRemote=false, pushTimer=null;
+
+  function setSync(state){
+    const d=$('syncDot'), t=$('syncText'); if(!d||!t) return;
+    if(state==='online'){ d.style.background='#57C79A'; t.textContent='מסונכרן בין המכשירים'; }
+    else if(state==='offline'){ d.style.background='#E6B450'; t.textContent='אין חיבור — יסונכרן כשהרשת תחזור'; }
+    else { d.style.background='#9AA7A4'; t.textContent='מקומי במכשיר זה בלבד'; }
+  }
+  function currentSettings(){ return {
+    rent:num('rent'),embo:num('embo'),eurusd:num('eurusd'),fee:num('fee'),
+    spouseWorks:$('spouseWorks').checked,spouseIncome:num('spouseIncome'),
+    ils:num('ils'),usdils:num('usdils'),livingCats }; }
+  function currentPayload(){ return { settings:currentSettings(), history:hist, _ts:Date.now(), _writer:MY_ID }; }
+  function schedulePush(){
+    if(applyingRemote || !db) return;
+    clearTimeout(pushTimer);
+    pushTimer=setTimeout(()=>{ try{ db.ref(SYNC_PATH).set(currentPayload()); }catch(e){} },500);
+  }
+  function applyRemote(val){
+    if(!val) return;
+    applyingRemote=true;
+    try{
+      const s=val.settings||{};
+      if(Array.isArray(s.livingCats)) livingCats=s.livingCats;
+      ['rent','embo','eurusd','fee','ils','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
+      if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
+      hist=Array.isArray(val.history)?val.history:[];
+      try{ localStorage.setItem(SKEY,JSON.stringify(s)); localStorage.setItem(HKEY,JSON.stringify(hist)); }catch(e){}
+      renderCats(); renderHistory(); recompute();
+    } finally { applyingRemote=false; }
+  }
+  function initFirebase(){
+    try{
+      if(typeof firebase==='undefined' || !firebase.initializeApp){ setSync('local'); return; }
+      firebase.initializeApp(firebaseConfig);
+      db=firebase.database();
+      db.ref('.info/connected').on('value',s=>setSync(s.val()?'online':'offline'));
+      db.ref(SYNC_PATH).on('value',snap=>{
+        const val=snap.val();
+        if(!val){ schedulePush(); return; }            // first run: seed the shared DB from this device
+        if(val._writer===MY_ID) return;                // ignore our own echo
+        applyRemote(val);                              // apply the other device's changes
+      });
+    }catch(e){ setSync('local'); }
+  }
+
+  // ---------- storage ----------
+  function saveSettings(){ try{ localStorage.setItem(SKEY,JSON.stringify(currentSettings())); }catch(e){} schedulePush(); }
+  function saveHistory(){ try{ localStorage.setItem(HKEY,JSON.stringify(hist)); }catch(e){} schedulePush(); }
+  function loadSettings(){ try{
+    const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(!s) return;
+    if(Array.isArray(s.livingCats)&&s.livingCats.length) livingCats=s.livingCats;
+    ['rent','embo','eurusd','fee','ils','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
+    if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
+  }catch(e){} }
+  function loadHistory(){ try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){hist=[];} }
+
+  // ---------- core calc ----------
+  function compute(){
+    const eurMonthly=num("embo")/12;
+    const stipend=eurMonthly*num("eurusd")*(1-num("fee")/100);
+    const income=stipend+($("spouseWorks").checked?num("spouseIncome"):0);
+    const israel=(num("ils")/num("usdils"))*(1+num("fee")/100);
+    const living=livingCats.reduce((s,c)=>s+(Number(c.value)||0),0);
+    const rent=num("rent");
+    const expenses=rent+living+israel;
+    return {eurMonthly,stipend,income,israel,living,rent,expenses,surplus:income-expenses};
+  }
+  function expenseSlices(){
+    const d=compute();
+    const arr=[{name:'שכר דירה',value:d.rent,color:'#2A4A54'}];
+    livingCats.forEach((c,i)=>arr.push({name:c.name||'—',value:Number(c.value)||0,color:LIVING_RAMP[i%LIVING_RAMP.length]}));
+    arr.push({name:'החזר לישראל',value:d.israel,color:'#C98A3B'});
+    return arr;
+  }
+  function recompute(){
+    const d=compute(), pos=d.surplus>=0, denom=Math.max(d.income,d.expenses,1);
+    const w=x=>(x/denom*100)+"%";
+    $("oInc").textContent=usd(d.income);
+    $("oExp").textContent=usd(d.expenses);
+    $("oSur").textContent=usd(d.surplus);
+    $("oSur").style.color=pos?"var(--teal)":"var(--deficit)";
+    $("resLbl").textContent=pos?"פנוי לחיסכון / חודש":"גירעון / חודש";
+    $("resBox").style.background=pos?"#EAF3F1":"#F6E9E6";
+    $("oYear").textContent=usd(d.surplus*12)+" לשנה";
+    $("bRent").style.width=w(d.rent);
+    $("bLiving").style.width=w(d.living);
+    $("bIsrael").style.width=w(d.israel);
+    $("bLast").style.width=w(Math.abs(d.surplus));
+    $("bLast").style.background=pos?"var(--teal)":"var(--deficit)";
+    $("kLast").style.background=pos?"var(--teal)":"var(--deficit)";
+    $("kLastT").textContent=pos?"חיסכון":"חריגה";
+    $("oFee").textContent=num("fee")+"%";
+    $("oRent").textContent=usd(d.rent);
+    $("hEmbo").textContent=eur(d.eurMonthly)+" לחודש";
+    $("hStipend").textContent="מלגה אחרי המרה ≈ "+usd(d.stipend)+" / חודש";
+    $("hIsrael").textContent="≈ "+usd(d.israel)+" כולל עמלה";
+    $("spouseWrap").style.display=$("spouseWorks").checked?"block":"none";
+    const h=$("hRent");
+    if(d.rent<=2600){h.textContent="טווח סטודיו / דיור מסובסד של UCSF — מרווח נוח";h.style.color="var(--teal)";}
+    else if(d.rent<=3500){h.textContent="מתחת ל‑$3,500 — מאוזן";h.style.color="var(--teal)";}
+    else{h.textContent="מעל $3,500 — לחוץ; שקול שכונה חיצונית או דיור אקדמי";h.style.color="var(--deficit)";}
+    drawLivePie();
+    saveSettings();
+  }
+
+  // ---------- categories ----------
+  function renderCats(){
+    const list=$('catList'); list.innerHTML='';
+    livingCats.forEach(c=>{
+      const cell=document.createElement('div'); cell.className='catcell';
+      const nrow=document.createElement('div'); nrow.className='catname-row';
+      const name=document.createElement('input'); name.type='text'; name.className='catname';
+      name.value=c.name; name.placeholder='שם הקטגוריה';
+      name.addEventListener('input',()=>{ c.name=name.value; recompute(); });
+      const del=document.createElement('button'); del.type='button'; del.className='catdel'; del.textContent='✕';
+      del.addEventListener('click',()=>deleteCat(c.id));
+      nrow.appendChild(name); nrow.appendChild(del);
+      const r2=document.createElement('div'); r2.className='catrow2';
+      const dbox=document.createElement('div'); dbox.className='catbox';
+      dbox.innerHTML='<div class="caplbl">סכום לשינוי</div>';
+      const delta=document.createElement('input'); delta.type='number'; delta.className='catdelta';
+      delta.placeholder='0'; delta.setAttribute('inputmode','decimal');
+      dbox.appendChild(delta);
+      const pm=document.createElement('div'); pm.className='catpm';
+      const plus=document.createElement('button'); plus.type='button'; plus.textContent='+';
+      const minus=document.createElement('button'); minus.type='button'; minus.textContent='−';
+      pm.appendChild(plus); pm.appendChild(minus);
+      const ubox=document.createElement('div'); ubox.className='catbox';
+      ubox.innerHTML='<div class="caplbl">סה״כ מעודכן</div>';
+      const upd=document.createElement('div'); upd.className='catupdated'; upd.textContent=comma(c.value);
+      ubox.appendChild(upd);
+      const apply=(sign)=>{ const dv=parseFloat(delta.value)||0;
+        c.value=Math.max(0,(Number(c.value)||0)+sign*dv); upd.textContent=comma(c.value); delta.value=''; recompute(); };
+      plus.addEventListener('click',()=>apply(1));
+      minus.addEventListener('click',()=>apply(-1));
+      r2.appendChild(dbox); r2.appendChild(pm); r2.appendChild(ubox);
+      cell.appendChild(nrow); cell.appendChild(r2);
+      list.appendChild(cell);
+    });
+  }
+  function addCat(){
+    const c={id:Date.now()+Math.floor(Math.random()*1000),name:'',value:0};
+    livingCats.push(c); renderCats(); recompute();
+    const names=$('catList').querySelectorAll('.catname');
+    const last=names[names.length-1]; if(last) last.focus();
+  }
+  function deleteCat(id){
+    const idx=livingCats.findIndex(c=>c.id===id); if(idx<0) return;
+    const prev=livingCats[idx];
+    livingCats.splice(idx,1); renderCats(); recompute();
+    showToast('הקטגוריה נמחקה','שחזר',()=>{ livingCats.splice(idx,0,prev); renderCats(); recompute(); });
+  }
+
+  // ---------- pie ----------
+  function drawDonut(canvas,slices,total){
+    if(!canvas) return;
+    const ctx=canvas.getContext('2d'); if(!ctx) return;
+    const dpr=2,size=220; canvas.width=size*dpr; canvas.height=size*dpr;
+    canvas.style.width=size+'px'; canvas.style.height=size+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,size,size);
+    const cx=size/2,cy=size/2,r=size*0.44,inner=r*0.6;
+    let a=-Math.PI/2;
+    if(total>0){ slices.forEach(s=>{ const ang=s.value/total*Math.PI*2;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a,a+ang); ctx.closePath();
+      ctx.fillStyle=s.color; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); a+=ang; });
+    } else { ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#E5EAE9'; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#182524'; ctx.font='700 22px -apple-system,Arial,sans-serif'; ctx.fillText(usd(total),cx,cy-6);
+    ctx.fillStyle='#5E6E6B'; ctx.font='400 12px -apple-system,Arial,sans-serif'; ctx.fillText('סה״כ הוצאות',cx,cy+14);
+    ctx.textBaseline='alphabetic';
+  }
+  function drawLivePie(){
+    const slices=expenseSlices().filter(s=>s.value>0);
+    const total=slices.reduce((a,s)=>a+s.value,0);
+    drawDonut($('pieCanvas'),slices,total);
+    const leg=$('pieLegend'); if(!leg) return; leg.innerHTML='';
+    slices.forEach(s=>{
+      const pct=total?(s.value/total*100):0;
+      const it=document.createElement('div'); it.className='pieit';
+      it.innerHTML='<span class="pdot" style="background:'+s.color+'"></span>'
+        +'<span class="pname">'+esc(s.name)+'</span>'
+        +'<span class="ppct">'+pct.toFixed(1)+'%</span>';
+      leg.appendChild(it);
+    });
+  }
+
+  // ---------- history / tracking ----------
+  function cats(e){
+    const pos=e.surplus>=0;
+    return [['var(--rent)','דיור',e.rent],['var(--living)','מחיה',e.living],
+            ['var(--israel)','החזר לישראל',e.israel],
+            [pos?'var(--teal)':'var(--deficit)',pos?'חיסכון':'חריגה',Math.abs(e.surplus)]];
+  }
+  function barEl(e){
+    const denom=Math.max(e.income,e.expenses,1);
+    const bar=document.createElement('div'); bar.className='bar';
+    cats(e).forEach(([c,,v])=>{ const s=document.createElement('div'); s.style.width=(v/denom*100)+'%'; s.style.background=c; bar.appendChild(s); });
+    return bar;
+  }
+  function valuesEl(e){
+    const eu=e.eurUsd||1.14, ui=e.usdIls||3.05;
+    const g=document.createElement('div'); g.className='vgrid';
+    cats(e).forEach(([col,name,u])=>{
+      const cell=document.createElement('div'); cell.className='vcell';
+      cell.innerHTML='<div class="vname"><span class="vdot" style="background:'+col+'"></span>'+name+'</div>'
+        +'<div class="vnum">$'+fmt(u)+'</div>'
+        +'<div class="vnum vmut">₪'+fmt(u*ui)+'</div>'
+        +'<div class="vnum vmut">€'+fmt(u/eu)+'</div>';
+      g.appendChild(cell);
+    });
+    return g;
+  }
+  function renderHistory(){
+    const wrap=$('trackList'); wrap.innerHTML='';
+    if(!hist.length){ wrap.innerHTML='<div class="empty">עדיין אין חודשים שמורים.<br>מלא נתונים בלשונית "מחשבון" ולחץ "סכם חודש".</div>'; return; }
+    [...hist].reverse().forEach(e=>{
+      const card=document.createElement('div'); card.className='monthcard';
+      const head=document.createElement('div'); head.className='monthhead';
+      const left=document.createElement('div');
+      left.innerHTML='<div class="monthlabel">'+e.label+'</div><div class="monthdate">נשמר '+e.dateStr+'</div>';
+      const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center';
+      const pos=e.surplus>=0;
+      right.innerHTML='<span class="monthsur mono" style="color:'+(pos?'var(--teal)':'var(--deficit)')+'">'+usd(e.surplus)+'</span>';
+      const db2=document.createElement('button'); db2.className='del'; db2.type='button'; db2.textContent='מחק';
+      db2.addEventListener('click',()=>deleteMonth(e.id));
+      right.appendChild(db2);
+      head.appendChild(left); head.appendChild(right);
+      card.appendChild(head); card.appendChild(barEl(e)); card.appendChild(valuesEl(e));
+      wrap.appendChild(card);
+    });
+  }
+  function deleteMonth(id){
+    const idx=hist.findIndex(e=>e.id===id); if(idx<0) return;
+    const prev=hist[idx];
+    hist.splice(idx,1); saveHistory(); renderHistory();
+    showToast('החודש נמחק','שחזר',()=>{ hist.push(prev); hist.sort((a,b)=>a.ym<b.ym?-1:1); saveHistory(); renderHistory(); });
+  }
+
+  function summarizeMonth(){
+    const d=compute(), now=new Date();
+    const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const entry={
+      id:Date.now(), ym,
+      label:heMonths[now.getMonth()]+' '+now.getFullYear(),
+      dateStr:now.getDate()+'.'+(now.getMonth()+1)+'.'+now.getFullYear(),
+      income:d.income, expenses:d.expenses, rent:d.rent, living:d.living, israel:d.israel, surplus:d.surplus,
+      eurUsd:num('eurusd'), usdIls:num('usdils'),
+      slices:expenseSlices().filter(s=>s.value>0).map(s=>({name:s.name,value:s.value,color:s.color}))
+    };
+    const idx=hist.findIndex(e=>e.ym===ym);
+    let undoFn;
+    if(idx>=0){
+      const prev=hist[idx]; entry.id=prev.id; hist[idx]=entry;
+      undoFn=()=>{ const i=hist.findIndex(e=>e.id===entry.id); if(i>=0) hist[i]=prev; saveHistory(); renderHistory(); showToast('השמירה בוטלה'); };
+    }else{
+      hist.push(entry);
+      undoFn=()=>{ hist=hist.filter(e=>e.id!==entry.id); saveHistory(); renderHistory(); showToast('השמירה בוטלה'); };
+    }
+    hist.sort((a,b)=>a.ym<b.ym?-1:1);
+    saveHistory(); renderHistory();
+    generateImage(entry, undoFn);
+  }
+
+  // ---------- image ----------
+  function rrect(x,px,py,w,h,r){x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);
+    x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath();}
+  function reportDataURL(e){
+    const W=1080,LM=100,RM=W-100,BW=W-200,pos=e.surplus>=0;
+    const eu=e.eurUsd||1.14, ui=e.usdIls||3.05;
+    const slices=(e.slices&&e.slices.length)?e.slices:[];
+    const total=slices.reduce((a,s)=>a+s.value,0);
+    const legRows=Math.ceil(slices.length/2);
+    const pieTitleY=1000, donutR=150, donutCy=pieTitleY+40+donutR;
+    const legStartY=donutCy+donutR+50;
+    const H=slices.length ? (legStartY+legRows*46+90) : 1180;
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const x=c.getContext('2d'); if(!x) return ''; try{x.direction='rtl';}catch(_){}
+    x.fillStyle='#E9EDEC';x.fillRect(0,0,W,H);
+    rrect(x,40,40,W-80,H-80,32);x.fillStyle='#fff';x.fill();
+    x.textAlign='right';x.fillStyle='#5E6E6B';x.font='500 26px -apple-system,Arial,sans-serif';
+    x.fillText('מחשבון תקציבי ראינן',RM,150);
+    x.fillStyle='#182524';x.font='600 54px Georgia,serif';x.fillText('סיכום חודשי',RM,215);
+    x.fillStyle='#5E6E6B';x.font='400 30px -apple-system,Arial,sans-serif';
+    x.fillText('תאריך: '+e.label+' · נשמר '+e.dateStr,RM,262);
+    rrect(x,100,300,BW,180,20);x.fillStyle=pos?'#EAF3F1':'#F6E9E6';x.fill();
+    x.textAlign='right';x.fillStyle='#5E6E6B';x.font='500 30px -apple-system,Arial,sans-serif';
+    x.fillText(pos?'פנוי לחיסכון לחודש':'גירעון לחודש',RM-30,372);
+    x.fillStyle=pos?'#137567':'#B4432E';x.font='700 82px -apple-system,Arial,sans-serif';
+    x.fillText(usd(e.surplus),RM-30,456);
+    x.textAlign='left';x.fillStyle='#5E6E6B';x.font='400 26px -apple-system,Arial,sans-serif';
+    x.fillText(usd(e.surplus*12)+' לשנה',LM+30,456);
+    let y=560;
+    x.textAlign='right';x.fillStyle='#5E6E6B';x.font='500 28px -apple-system,Arial,sans-serif';
+    x.fillText('הכנסה נטו לחודש',RM,y);
+    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.income),RM,y+52);
+    x.textAlign='left';x.fillStyle='#5E6E6B';x.font='500 28px -apple-system,Arial,sans-serif';
+    x.fillText('הוצאות לחודש',LM,y);
+    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.expenses),LM,y+52);
+    const by=700,bh=34,denom=Math.max(e.income,e.expenses,1);
+    x.save();rrect(x,LM,by,BW,bh,17);x.clip();
+    let cx=RM;
+    const segs=[['#2A4A54',e.rent],['#7A9A93',e.living],['#C98A3B',e.israel],[pos?'#137567':'#B4432E',Math.abs(e.surplus)]];
+    segs.forEach(([col,v])=>{const w=v/denom*BW;x.fillStyle=col;x.fillRect(cx-w,by,w,bh);cx-=w;});
+    x.restore();
+    const names=['דיור','מחיה','ישראל',pos?'חיסכון':'חריגה'];
+    const colW=BW/4, gy=by+bh+50;
+    segs.forEach(([col,v],i)=>{
+      const ctr=RM-colW*i-colW/2;
+      x.fillStyle=col;x.beginPath();x.arc(ctr,gy-14,9,0,Math.PI*2);x.fill();
+      x.textAlign='center';x.fillStyle=col;x.font='700 27px -apple-system,Arial,sans-serif';x.fillText(names[i],ctr,gy+26);
+      x.fillStyle='#182524';x.font='600 28px -apple-system,Arial,sans-serif';x.fillText('$'+fmt(v),ctr,gy+72);
+      x.fillStyle='#5E6E6B';x.font='400 27px -apple-system,Arial,sans-serif';
+      x.fillText('₪'+fmt(v*ui),ctr,gy+108); x.fillText('€'+fmt(v/eu),ctr,gy+144);
+    });
+    if(slices.length){
+      x.fillStyle='#182524';x.textAlign='right';x.font='600 34px -apple-system,Arial,sans-serif';
+      x.fillText('התפלגות כלל ההוצאות',RM,pieTitleY);
+      const dcx=W/2, inner=95; let a=-Math.PI/2;
+      slices.forEach(s=>{ const ang=s.value/total*Math.PI*2;
+        x.beginPath();x.moveTo(dcx,donutCy);x.arc(dcx,donutCy,donutR,a,a+ang);x.closePath();
+        x.fillStyle=s.color;x.fill();x.strokeStyle='#fff';x.lineWidth=3;x.stroke();a+=ang; });
+      x.beginPath();x.arc(dcx,donutCy,inner,0,Math.PI*2);x.fillStyle='#fff';x.fill();
+      x.textAlign='center';x.textBaseline='middle';
+      x.fillStyle='#182524';x.font='700 42px -apple-system,Arial,sans-serif';x.fillText(usd(total),dcx,donutCy-8);
+      x.fillStyle='#5E6E6B';x.font='400 24px -apple-system,Arial,sans-serif';x.fillText('סה״כ הוצאות',dcx,donutCy+30);
+      x.textBaseline='alphabetic';
+      slices.forEach((s,i)=>{
+        const col=i%2, rowi=Math.floor(i/2);
+        const rightEdge= col===0? RM : (W/2-30);
+        const yy=legStartY+rowi*46, pct=(s.value/total*100).toFixed(1);
+        x.fillStyle=s.color; rrect(x,rightEdge-18,yy-17,18,18,4); x.fill();
+        x.fillStyle='#182524'; x.textAlign='right'; x.font='400 24px -apple-system,Arial,sans-serif';
+        x.fillText(s.name+' — '+pct+'%', rightEdge-28, yy);
+      });
+    }
+    x.textAlign='right';x.fillStyle='#8A9794';x.font='400 24px -apple-system,Arial,sans-serif';
+    x.fillText('אומדן לתכנון בלבד · לא ייעוץ פיננסי',RM,H-50);
+    return c.toDataURL('image/png');
+  }
+  function dataURLtoBlob(d){
+    const p=d.split(','),mime=p[0].match(/:(.*?);/)[1],bin=atob(p[1]),arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    return new Blob([arr],{type:mime});
+  }
+  let pendingUndo=null;
+  function generateImage(e, undoFn){
+    const url=reportDataURL(e); if(!url) return;
+    pendingUndo=undoFn||null;
+    $('ovUndo').style.display=undoFn?'inline-block':'none';
+    $('ovImg').src=url; $('overlay').classList.add('show');
+    try{
+      const file=new File([dataURLtoBlob(url)],'budget-'+e.ym+'.png',{type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:'סיכום חודשי'}).catch(()=>{});
+      }else{
+        const a=document.createElement('a');a.href=url;a.download='budget-'+e.ym+'.png';
+        document.body.appendChild(a);a.click();a.remove();
+      }
+    }catch(_){}
+  }
+
+  let toastTimer=null;
+  function showToast(msg, actionLabel, actionFn){
+    const t=$('toast'); t.innerHTML='';
+    const s=document.createElement('span'); s.textContent=msg; t.appendChild(s);
+    if(actionLabel && actionFn){
+      const b=document.createElement('button'); b.className='toastbtn'; b.textContent=actionLabel;
+      b.addEventListener('click',()=>{ actionFn(); hideToast(); });
+      t.appendChild(b);
+    }
+    t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(hideToast, actionLabel?6000:2200);
+  }
+  function hideToast(){ $('toast').classList.remove('show'); }
+
+  function showTab(t){
+    $('viewCalc').style.display=t==='calc'?'block':'none';
+    $('viewTrack').style.display=t==='track'?'block':'none';
+    $('tabCalc').classList.toggle('active',t==='calc');
+    $('tabTrack').classList.toggle('active',t==='track');
+  }
+  $('tabCalc').addEventListener('click',()=>showTab('calc'));
+  $('tabTrack').addEventListener('click',()=>showTab('track'));
+  $('sumBtn').addEventListener('click',summarizeMonth);
+  $('addCat').addEventListener('click',addCat);
+  $('ovClose').addEventListener('click',()=>{ pendingUndo=null; $('overlay').classList.remove('show'); });
+  $('ovUndo').addEventListener('click',()=>{ if(pendingUndo) pendingUndo(); pendingUndo=null; $('overlay').classList.remove('show'); });
+  ['embo','eurusd','fee','spouseIncome','ils','usdils','rent'].forEach(id=>{
+    const el=$(id); if(el){ el.addEventListener('input',recompute); el.addEventListener('change',recompute); }
+  });
+  $('spouseWorks').addEventListener('change',recompute);
+
+  // init
+  const now=new Date();
+  $('appDate').textContent='תאריך: '+heMonths[now.getMonth()]+', '+now.getFullYear();
+  loadSettings(); renderCats(); loadHistory(); renderHistory(); recompute();
+  initFirebase();
+</script>
+</body>
+</html>
