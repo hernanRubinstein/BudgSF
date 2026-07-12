@@ -198,10 +198,16 @@
 
     <div class="card">
       <div class="ctitle">החזר חובות לישראל</div>
-      <div class="fldwrap"><label class="fld">החזר חודשי (₪)</label>
-        <input type="number" id="ils" value="2000"></div>
+      <div class="fldwrap"><label class="fld">תשלומי כרטיס אשראי (₪)</label>
+        <input type="number" id="ilsCard" value="1930"></div>
+      <div class="fldwrap"><label class="fld">הלוואות בנק — קרן + ריבית (₪)</label>
+        <input type="number" id="ilsLoan" value="2185">
+        <div class="hint">ממוצע מדף החשבון: מאי 2,188.74 ₪ · יוני 2,182.81 ₪</div></div>
       <div class="fldwrap"><label class="fld">שער דולר (₪ ל‑$1)</label>
-        <input type="number" id="usdils" value="3.05" step="0.01"><div class="hint mono" id="hIsrael"></div></div>
+        <input type="number" id="usdils" value="3.05" step="0.01"></div>
+      <div class="fldwrap" style="margin-bottom:0">
+        <div class="catupdated" id="ilsTotal" style="height:46px;font-size:16px">₪0</div>
+        <div class="hint mono" id="hIsrael"></div></div>
     </div>
 
     <p class="note">שערים לפי נתוני שוק, יולי 2026 (€1≈$1.14, $1≈₪3.05). הביטוחים שה‑PI מכסה אינם בתקציב הזה. אלה אומדנים לתכנון בלבד, לא ייעוץ פיננסי — השער בפועל ייקבע ביום ההמרה, בניכוי עמלות.</p>
@@ -285,7 +291,7 @@
   function currentSettings(){ return {
     rent:num('rent'),embo:num('embo'),eurusd:num('eurusd'),fee:num('fee'),
     spouseWorks:$('spouseWorks').checked,spouseIncome:num('spouseIncome'),
-    ils:num('ils'),usdils:num('usdils'),livingCats }; }
+    ilsCard:num('ilsCard'),ilsLoan:num('ilsLoan'),usdils:num('usdils'),livingCats }; }
   function currentPayload(){ return { settings:currentSettings(), history:hist, _ts:Date.now(), _writer:MY_ID }; }
   function schedulePush(){
     if(applyingRemote || !db) return;
@@ -298,7 +304,7 @@
     try{
       const s=val.settings||{};
       if(Array.isArray(s.livingCats)) livingCats=s.livingCats;
-      ['rent','embo','eurusd','fee','ils','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
+      ['rent','embo','eurusd','fee','ilsCard','ilsLoan','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
       if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
       hist=Array.isArray(val.history)?val.history:[];
       try{ localStorage.setItem(SKEY,JSON.stringify(s)); localStorage.setItem(HKEY,JSON.stringify(hist)); }catch(e){}
@@ -326,7 +332,7 @@
   function loadSettings(){ try{
     const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(!s) return;
     if(Array.isArray(s.livingCats)&&s.livingCats.length) livingCats=s.livingCats;
-    ['rent','embo','eurusd','fee','ils','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
+    ['rent','embo','eurusd','fee','ilsCard','ilsLoan','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
     if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
   }catch(e){} }
   function loadHistory(){ try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){hist=[];} }
@@ -336,11 +342,12 @@
     const eurMonthly=num("embo")/12;
     const stipend=eurMonthly*num("eurusd")*(1-num("fee")/100);
     const income=stipend+($("spouseWorks").checked?num("spouseIncome"):0);
-    const israel=(num("ils")/num("usdils"))*(1+num("fee")/100);
+    const ilsTotal=num("ilsCard")+num("ilsLoan");
+    const israel=(ilsTotal/num("usdils"))*(1+num("fee")/100);
     const living=livingCats.reduce((s,c)=>s+(Number(c.value)||0),0);
     const rent=num("rent");
     const expenses=rent+living+israel;
-    return {eurMonthly,stipend,income,israel,living,rent,expenses,surplus:income-expenses};
+    return {eurMonthly,stipend,income,israel,ilsTotal,living,rent,expenses,surplus:income-expenses};
   }
   function expenseSlices(){
     const d=compute();
@@ -370,7 +377,8 @@
     $("oRent").textContent=usd(d.rent);
     $("hEmbo").textContent=eur(d.eurMonthly)+" לחודש";
     $("hStipend").textContent="מלגה אחרי המרה ≈ "+usd(d.stipend)+" / חודש";
-    $("hIsrael").textContent="≈ "+usd(d.israel)+" כולל עמלה";
+    $("ilsTotal").textContent="₪"+d.ilsTotal.toLocaleString("en-US")+" לחודש";
+    $("hIsrael").textContent="≈ "+usd(d.israel)+" לחודש (כולל עמלה)";
     $("spouseWrap").style.display=$("spouseWorks").checked?"block":"none";
     const h=$("hRent");
     if(d.rent<=2600){h.textContent="טווח סטודיו / דיור מסובסד של UCSF — מרווח נוח";h.style.color="var(--teal)";}
@@ -522,7 +530,7 @@
       label:heMonths[now.getMonth()]+' '+now.getFullYear(),
       dateStr:now.getDate()+'.'+(now.getMonth()+1)+'.'+now.getFullYear(),
       income:d.income, expenses:d.expenses, rent:d.rent, living:d.living, israel:d.israel, surplus:d.surplus,
-      eurUsd:num('eurusd'), usdIls:num('usdils'),
+      eurUsd:num('eurusd'), usdIls:num('usdils'), ilsTotal:d.ilsTotal,
       slices:expenseSlices().filter(s=>s.value>0).map(s=>({name:s.name,value:s.value,color:s.color}))
     };
     const idx=hist.findIndex(e=>e.ym===ym);
@@ -663,7 +671,7 @@
   $('addCat').addEventListener('click',addCat);
   $('ovClose').addEventListener('click',()=>{ pendingUndo=null; $('overlay').classList.remove('show'); });
   $('ovUndo').addEventListener('click',()=>{ if(pendingUndo) pendingUndo(); pendingUndo=null; $('overlay').classList.remove('show'); });
-  ['embo','eurusd','fee','spouseIncome','ils','usdils','rent'].forEach(id=>{
+  ['embo','eurusd','fee','spouseIncome','ilsCard','ilsLoan','usdils','rent'].forEach(id=>{
     const el=$(id); if(el){ el.addEventListener('input',recompute); el.addEventListener('change',recompute); }
   });
   $('spouseWorks').addEventListener('change',recompute);
