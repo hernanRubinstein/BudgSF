@@ -69,6 +69,11 @@
   .catname-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   #catList input.catname{flex:1 1 0;min-width:0;width:auto;font-size:14px;font-weight:600;
     background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:right}
+  .catfixed{flex:none;display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);
+    white-space:nowrap;cursor:pointer;user-select:none}
+  .catfixed input{width:14px;height:14px;accent-color:var(--teal);flex:none}
+  .catgrouplbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:14px 0 8px}
+  .catgrouplbl:first-child{margin-top:0}
   .catdel{flex:none;border:1px solid var(--line);background:none;color:var(--deficit);
     border-radius:8px;padding:7px 11px;font-size:14px;font-weight:700;cursor:pointer;line-height:1}
   .catdel:active{background:var(--alt)}
@@ -171,6 +176,7 @@
         <span class="ctitle" style="margin:0">מחיה</span>
         <button class="addcat" id="addCat" type="button">+ הוסף קטגוריה</button>
       </div>
+      <div class="hint" style="margin:-4px 0 10px">סמן קטגוריה כ"קבועה" כדי שהסכום שלה יישמר גם אחרי סיכום החודש. קטגוריות שלא סומנו כקבועות מתאפסות ל‑$0 אוטומטית לאחר הסיכום.</div>
       <div id="catList"></div>
 
       <div class="piewrap">
@@ -254,14 +260,14 @@
   const LIVING_RAMP=['#7A9A93','#5E8B82','#A7C2BB','#4B6A72','#8FB0A8','#6E8C86','#93A9A2','#3E6B63','#B0C4BE','#557A72','#79A69C','#456560'];
 
   let livingCats=[
-    {id:1,name:'חשבונות + אינטרנט',value:230},
-    {id:2,name:'מכולת',value:800},
-    {id:3,name:'אוכל בחוץ',value:300},
-    {id:4,name:'תחבורה',value:200},
-    {id:5,name:'טלפון',value:70},
-    {id:6,name:'בריאות',value:100},
-    {id:7,name:'ביטוח דיירים',value:20},
-    {id:8,name:'שונות',value:250}
+    {id:1,name:'חשבונות + אינטרנט',value:230,fixed:true},
+    {id:2,name:'מכולת',value:800,fixed:false},
+    {id:3,name:'אוכל בחוץ',value:300,fixed:false},
+    {id:4,name:'תחבורה',value:200,fixed:false},
+    {id:5,name:'טלפון',value:70,fixed:true},
+    {id:6,name:'בריאות',value:100,fixed:false},
+    {id:7,name:'ביטוח דיירים',value:20,fixed:true},
+    {id:8,name:'שונות',value:250,fixed:false}
   ];
   let hist=[];
 
@@ -389,42 +395,58 @@
   }
 
   // ---------- categories ----------
+  function catCell(c){
+    const cell=document.createElement('div'); cell.className='catcell';
+    const nrow=document.createElement('div'); nrow.className='catname-row';
+    const name=document.createElement('input'); name.type='text'; name.className='catname';
+    name.value=c.name; name.placeholder='שם הקטגוריה';
+    name.addEventListener('input',()=>{ c.name=name.value; recompute(); });
+    const fixedLbl=document.createElement('label'); fixedLbl.className='catfixed';
+    const fixedChk=document.createElement('input'); fixedChk.type='checkbox'; fixedChk.checked=!!c.fixed;
+    fixedChk.addEventListener('change',()=>{ c.fixed=fixedChk.checked; renderCats(); recompute(); });
+    fixedLbl.appendChild(fixedChk); fixedLbl.appendChild(document.createTextNode('קבועה'));
+    const del=document.createElement('button'); del.type='button'; del.className='catdel'; del.textContent='✕';
+    del.addEventListener('click',()=>deleteCat(c.id));
+    nrow.appendChild(name); nrow.appendChild(fixedLbl); nrow.appendChild(del);
+    const r2=document.createElement('div'); r2.className='catrow2';
+    const dbox=document.createElement('div'); dbox.className='catbox';
+    dbox.innerHTML='<div class="caplbl">סכום לשינוי</div>';
+    const delta=document.createElement('input'); delta.type='number'; delta.className='catdelta';
+    delta.placeholder='0'; delta.setAttribute('inputmode','decimal');
+    dbox.appendChild(delta);
+    const pm=document.createElement('div'); pm.className='catpm';
+    const plus=document.createElement('button'); plus.type='button'; plus.textContent='+';
+    const minus=document.createElement('button'); minus.type='button'; minus.textContent='−';
+    pm.appendChild(plus); pm.appendChild(minus);
+    const ubox=document.createElement('div'); ubox.className='catbox';
+    ubox.innerHTML='<div class="caplbl">סה״כ מעודכן</div>';
+    const upd=document.createElement('div'); upd.className='catupdated'; upd.textContent=comma(c.value);
+    ubox.appendChild(upd);
+    const apply=(sign)=>{ const dv=parseFloat(delta.value)||0;
+      c.value=Math.max(0,(Number(c.value)||0)+sign*dv); upd.textContent=comma(c.value); delta.value=''; recompute(); };
+    plus.addEventListener('click',()=>apply(1));
+    minus.addEventListener('click',()=>apply(-1));
+    r2.appendChild(dbox); r2.appendChild(pm); r2.appendChild(ubox);
+    cell.appendChild(nrow); cell.appendChild(r2);
+    return cell;
+  }
   function renderCats(){
     const list=$('catList'); list.innerHTML='';
-    livingCats.forEach(c=>{
-      const cell=document.createElement('div'); cell.className='catcell';
-      const nrow=document.createElement('div'); nrow.className='catname-row';
-      const name=document.createElement('input'); name.type='text'; name.className='catname';
-      name.value=c.name; name.placeholder='שם הקטגוריה';
-      name.addEventListener('input',()=>{ c.name=name.value; recompute(); });
-      const del=document.createElement('button'); del.type='button'; del.className='catdel'; del.textContent='✕';
-      del.addEventListener('click',()=>deleteCat(c.id));
-      nrow.appendChild(name); nrow.appendChild(del);
-      const r2=document.createElement('div'); r2.className='catrow2';
-      const dbox=document.createElement('div'); dbox.className='catbox';
-      dbox.innerHTML='<div class="caplbl">סכום לשינוי</div>';
-      const delta=document.createElement('input'); delta.type='number'; delta.className='catdelta';
-      delta.placeholder='0'; delta.setAttribute('inputmode','decimal');
-      dbox.appendChild(delta);
-      const pm=document.createElement('div'); pm.className='catpm';
-      const plus=document.createElement('button'); plus.type='button'; plus.textContent='+';
-      const minus=document.createElement('button'); minus.type='button'; minus.textContent='−';
-      pm.appendChild(plus); pm.appendChild(minus);
-      const ubox=document.createElement('div'); ubox.className='catbox';
-      ubox.innerHTML='<div class="caplbl">סה״כ מעודכן</div>';
-      const upd=document.createElement('div'); upd.className='catupdated'; upd.textContent=comma(c.value);
-      ubox.appendChild(upd);
-      const apply=(sign)=>{ const dv=parseFloat(delta.value)||0;
-        c.value=Math.max(0,(Number(c.value)||0)+sign*dv); upd.textContent=comma(c.value); delta.value=''; recompute(); };
-      plus.addEventListener('click',()=>apply(1));
-      minus.addEventListener('click',()=>apply(-1));
-      r2.appendChild(dbox); r2.appendChild(pm); r2.appendChild(ubox);
-      cell.appendChild(nrow); cell.appendChild(r2);
-      list.appendChild(cell);
-    });
+    const fixedCats=livingCats.filter(c=>c.fixed);
+    const liquidCats=livingCats.filter(c=>!c.fixed);
+    if(fixedCats.length){
+      const h=document.createElement('div'); h.className='catgrouplbl'; h.textContent='הוצאות קבועות';
+      list.appendChild(h);
+      fixedCats.forEach(c=>list.appendChild(catCell(c)));
+    }
+    if(liquidCats.length){
+      const h=document.createElement('div'); h.className='catgrouplbl'; h.textContent='הוצאות משתנות';
+      list.appendChild(h);
+      liquidCats.forEach(c=>list.appendChild(catCell(c)));
+    }
   }
   function addCat(){
-    const c={id:Date.now()+Math.floor(Math.random()*1000),name:'',value:0};
+    const c={id:Date.now()+Math.floor(Math.random()*1000),name:'',value:0,fixed:false};
     livingCats.push(c); renderCats(); recompute();
     const names=$('catList').querySelectorAll('.catname');
     const last=names[names.length-1]; if(last) last.focus();
@@ -533,17 +555,30 @@
       eurUsd:num('eurusd'), usdIls:num('usdils'), ilsTotal:d.ilsTotal,
       slices:expenseSlices().filter(s=>s.value>0).map(s=>({name:s.name,value:s.value,color:s.color}))
     };
+    const catsSnapshot=JSON.parse(JSON.stringify(livingCats));
     const idx=hist.findIndex(e=>e.ym===ym);
     let undoFn;
     if(idx>=0){
       const prev=hist[idx]; entry.id=prev.id; hist[idx]=entry;
-      undoFn=()=>{ const i=hist.findIndex(e=>e.id===entry.id); if(i>=0) hist[i]=prev; saveHistory(); renderHistory(); showToast('השמירה בוטלה'); };
+      undoFn=()=>{
+        const i=hist.findIndex(e=>e.id===entry.id); if(i>=0) hist[i]=prev;
+        livingCats=catsSnapshot;
+        saveHistory(); renderCats(); renderHistory(); recompute();
+        showToast('השמירה בוטלה');
+      };
     }else{
       hist.push(entry);
-      undoFn=()=>{ hist=hist.filter(e=>e.id!==entry.id); saveHistory(); renderHistory(); showToast('השמירה בוטלה'); };
+      undoFn=()=>{
+        hist=hist.filter(e=>e.id!==entry.id);
+        livingCats=catsSnapshot;
+        saveHistory(); renderCats(); renderHistory(); recompute();
+        showToast('השמירה בוטלה');
+      };
     }
     hist.sort((a,b)=>a.ym<b.ym?-1:1);
     saveHistory(); renderHistory();
+    livingCats.forEach(c=>{ if(!c.fixed) c.value=0; });
+    renderCats(); recompute();
     generateImage(entry, undoFn);
   }
 
