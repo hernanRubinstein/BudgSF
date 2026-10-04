@@ -121,6 +121,7 @@
   .overlay p{color:#fff;font-size:14px;margin:14px 0 0;text-align:center;line-height:1.5}
   .ovbtns{display:flex;gap:10px;margin-top:16px}
   .ovbtns button{border:none;border-radius:10px;padding:11px 22px;font-weight:700;font-size:15px;cursor:pointer}
+  #catList input.catbudget{flex:none;width:100%;text-align:center;font-size:15px;padding:8px 6px}
 </style>
 </head>
 <body>
@@ -139,97 +140,59 @@
   <div id="viewCalc">
     <div class="card sticky">
       <div class="row">
-        <div><div class="fig-l">הכנסה נטו / חודש</div><div class="fig-v mono" id="oInc">$0</div></div>
-        <div style="text-align:left"><div class="fig-l">הוצאות / חודש</div><div class="fig-v mono" id="oExp">$0</div></div>
+        <div>
+          <div class="fig-l">תקציב כולל / חודש</div>
+          <div class="fig-v mono" id="oBudget">$0</div>
+        </div>
+        <div style="text-align:left"><div class="fig-l">הוצא / חודש</div><div class="fig-v mono" id="oSpent">$0</div></div>
       </div>
       <div class="result" id="resBox">
         <div class="row">
-          <span class="fig-l" id="resLbl">פנוי לחיסכון / חודש</span>
-          <span class="big mono" id="oSur">$0</span>
+          <span class="fig-l" id="resLbl">יתרה / חודש</span>
+          <span class="big mono" id="oBal">$0</span>
         </div>
-        <div class="sub mono" id="oYear">$0 לשנה</div>
       </div>
       <div class="bar">
-        <div id="bRent" style="background:var(--rent)"></div>
-        <div id="bLiving" style="background:var(--living)"></div>
-        <div id="bIsrael" style="background:var(--israel)"></div>
-        <div id="bLast"></div>
+        <div id="bSpent"></div>
+        <div id="bRemain"></div>
       </div>
       <div class="legend">
-        <span class="key"><span class="dot" style="background:var(--rent)"></span>דיור</span>
-        <span class="key"><span class="dot" style="background:var(--living)"></span>מחיה</span>
-        <span class="key"><span class="dot" style="background:var(--israel)"></span>החזר לישראל</span>
-        <span class="key"><span class="dot" id="kLast"></span><span id="kLastT">חיסכון</span></span>
+        <span class="key"><span class="dot" id="dSpent" style="background:var(--teal)"></span>הוצא</span>
+        <span class="key"><span class="dot" id="dRemain"></span><span id="lRemain">נשאר</span></span>
       </div>
     </div>
 
     <button class="btn" id="sumBtn">📸 סכם חודש ושמור תמונה</button>
 
     <div class="card">
-      <div class="ctitle">הוצאות חודשיות</div>
-      <div class="slrow"><label class="fld" style="margin:0">שכר דירה</label>
-        <span class="slval mono" id="oRent">$3,000</span></div>
-      <input type="range" id="rent" min="2000" max="4500" step="50" value="3000">
-      <div class="hint" id="hRent"></div>
-
+      <div class="ctitle">תקציב לפי קטגוריה</div>
       <div class="catbar">
-        <span class="ctitle" style="margin:0">מחיה</span>
+        <span class="ctitle" style="margin:0">קטגוריות</span>
         <button class="addcat" id="addCat" type="button">+ הוסף קטגוריה</button>
       </div>
       <div class="hint" style="margin:-4px 0 10px">סמן קטגוריה כ"קבועה" כדי שהסכום שלה יישמר גם אחרי סיכום החודש. קטגוריות שלא סומנו כקבועות מתאפסות ל‑$0 אוטומטית לאחר הסיכום.</div>
       <div id="catList"></div>
 
       <div class="piewrap">
-        <div class="ctitle">התפלגות כלל ההוצאות</div>
+        <div class="ctitle">התפלגות התקציב</div>
         <div style="display:flex;justify-content:center"><canvas id="pieCanvas"></canvas></div>
         <div id="pieLegend" class="pielegend"></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="ctitle">הכנסה</div>
-      <div class="fldwrap"><label class="fld">מלגת EMBO — שנתי (€)</label>
-        <input type="number" id="embo" value="65400"><div class="hint" id="hEmbo"></div></div>
-      <div class="fldwrap"><label class="fld">שער €→$</label>
-        <input type="number" id="eurusd" value="1.14" step="0.01"></div>
-      <div class="slrow"><label class="fld" style="margin:0">עמלת המרה</label>
-        <span class="slval mono" id="oFee">1%</span></div>
-      <input type="range" id="fee" min="0" max="3" step="0.25" value="1">
-      <div class="hint mono" id="hStipend"></div>
-      <label class="chk"><input type="checkbox" id="spouseWorks">בן/בת הזוג עובד/ת (J-2 EAD)</label>
-      <div class="fldwrap" id="spouseWrap" style="display:none;margin-top:12px">
-        <label class="fld">הכנסה חודשית נטו של בן/בת הזוג ($)</label>
-        <input type="number" id="spouseIncome" value="2500"></div>
-    </div>
 
-    <div class="card">
-      <div class="ctitle">החזר חובות לישראל</div>
-      <div class="fldwrap"><label class="fld">תשלומי כרטיס אשראי (₪)</label>
-        <input type="number" id="ilsCard" value="1930"></div>
-      <div class="fldwrap"><label class="fld">הלוואות בנק — קרן + ריבית (₪)</label>
-        <input type="number" id="ilsLoan" value="2185">
-        <div class="hint">ממוצע מדף החשבון: מאי 2,188.74 ₪ · יוני 2,182.81 ₪</div></div>
-      <div class="fldwrap"><label class="fld">שער דולר (₪ ל‑$1)</label>
-        <input type="number" id="usdils" value="3.05" step="0.01"></div>
-      <div class="fldwrap" style="margin-bottom:0">
-        <div class="catupdated" id="ilsTotal" style="height:46px;font-size:16px">₪0</div>
-        <div class="hint mono" id="hIsrael"></div></div>
-    </div>
-
-    <p class="note">שערים לפי נתוני שוק, יולי 2026 (€1≈$1.14, $1≈₪3.05). הביטוחים שה‑PI מכסה אינם בתקציב הזה. אלה אומדנים לתכנון בלבד, לא ייעוץ פיננסי — השער בפועל ייקבע ביום ההמרה, בניכוי עמלות.</p>
+    <p class="note">אלה אומדני תקציב לתכנון בלבד — לא ייעוץ פיננסי.</p>
   </div>
 
   <div id="viewTrack" style="display:none">
     <div class="card">
       <div class="ctitle">התפלגות הוצאות חודשית</div>
       <div class="legend">
-        <span class="key"><span class="dot" style="background:var(--rent)"></span>דיור</span>
-        <span class="key"><span class="dot" style="background:var(--living)"></span>מחיה</span>
-        <span class="key"><span class="dot" style="background:var(--israel)"></span>החזר לישראל</span>
-        <span class="key"><span class="dot" style="background:var(--teal)"></span>חיסכון</span>
+        <span class="key"><span class="dot" style="background:var(--teal)"></span>הוצא</span>
+        <span class="key"><span class="dot" style="background:#C7D6D2"></span>נשאר</span>
         <span class="key"><span class="dot" style="background:var(--deficit)"></span>חריגה</span>
       </div>
-      <div class="hint" style="margin-top:8px">תחת כל סרגל: הערך של כל פלח ב‑$ / ₪ / €.</div>
+      <div class="hint" style="margin-top:8px">כל חודש שמור: תקציב כולל, כמה הוצא, ויתרה.</div>
     </div>
     <div id="trackList"></div>
   </div>
@@ -260,18 +223,20 @@
   const LIVING_RAMP=['#7A9A93','#5E8B82','#A7C2BB','#4B6A72','#8FB0A8','#6E8C86','#93A9A2','#3E6B63','#B0C4BE','#557A72','#79A69C','#456560'];
 
   let livingCats=[
-    {id:1,name:'חשבונות + אינטרנט',value:230,fixed:true},
-    {id:2,name:'מכולת',value:800,fixed:false},
-    {id:3,name:'אוכל בחוץ',value:300,fixed:false},
-    {id:4,name:'תחבורה',value:200,fixed:false},
-    {id:5,name:'טלפון',value:70,fixed:true},
-    {id:6,name:'בריאות',value:100,fixed:false},
-    {id:7,name:'ביטוח דיירים',value:20,fixed:true},
-    {id:8,name:'שונות',value:250,fixed:false}
+    {id:1,name:'קוסטקו',budget:550,value:0,fixed:false},
+    {id:2,name:'השלמות קניות',budget:300,value:0,fixed:false},
+    {id:3,name:'חשמל וגז',budget:50,value:0,fixed:false},
+    {id:4,name:'אינטרנט',budget:45,value:0,fixed:false},
+    {id:5,name:'טלפון',budget:15,value:0,fixed:false},
+    {id:6,name:'הוצאות בית',budget:150,value:0,fixed:false},
+    {id:7,name:'בידור',budget:400,value:0,fixed:false},
+    {id:8,name:'שונות',budget:325,value:0,fixed:false},
+    {id:9,name:'תחבורה',budget:40,value:0,fixed:false},
+    {id:10,name:'ביטוח בריאות',budget:79,value:0,fixed:false}
   ];
   let hist=[];
 
-  const SKEY='sfBudgetSettings', HKEY='sfBudgetHistory';
+  const SKEY='sfBudgetSettings_v2', HKEY='sfBudgetHistory_v2';
 
   // ---------- Firebase sync ----------
   const firebaseConfig = {
@@ -284,7 +249,7 @@
     appId: "1:814158072554:web:8ff2271df5b1b2a35fe593",
     measurementId: "G-0LJRZMESV1"
   };
-  const SYNC_PATH='budget/shared';
+  const SYNC_PATH='budget/shared_v2';
   const MY_ID=Math.random().toString(36).slice(2);
   let db=null, applyingRemote=false, pushTimer=null;
 
@@ -294,10 +259,7 @@
     else if(state==='offline'){ d.style.background='#E6B450'; t.textContent='אין חיבור — יסונכרן כשהרשת תחזור'; }
     else { d.style.background='#9AA7A4'; t.textContent='מקומי במכשיר זה בלבד'; }
   }
-  function currentSettings(){ return {
-    rent:num('rent'),embo:num('embo'),eurusd:num('eurusd'),fee:num('fee'),
-    spouseWorks:$('spouseWorks').checked,spouseIncome:num('spouseIncome'),
-    ilsCard:num('ilsCard'),ilsLoan:num('ilsLoan'),usdils:num('usdils'),livingCats }; }
+  function currentSettings(){ return { livingCats }; }
   function currentPayload(){ return { settings:currentSettings(), history:hist, _ts:Date.now(), _writer:MY_ID }; }
   function schedulePush(){
     if(applyingRemote || !db) return;
@@ -310,8 +272,6 @@
     try{
       const s=val.settings||{};
       if(Array.isArray(s.livingCats)) livingCats=s.livingCats;
-      ['rent','embo','eurusd','fee','ilsCard','ilsLoan','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
-      if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
       hist=Array.isArray(val.history)?val.history:[];
       try{ localStorage.setItem(SKEY,JSON.stringify(s)); localStorage.setItem(HKEY,JSON.stringify(hist)); }catch(e){}
       renderCats(); renderHistory(); recompute();
@@ -338,58 +298,33 @@
   function loadSettings(){ try{
     const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(!s) return;
     if(Array.isArray(s.livingCats)&&s.livingCats.length) livingCats=s.livingCats;
-    ['rent','embo','eurusd','fee','ilsCard','ilsLoan','usdils','spouseIncome'].forEach(k=>{ if(s[k]!=null&&$(k)) $(k).value=s[k]; });
-    if($('spouseWorks')) $('spouseWorks').checked=!!s.spouseWorks;
   }catch(e){} }
   function loadHistory(){ try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){hist=[];} }
 
   // ---------- core calc ----------
   function compute(){
-    const eurMonthly=num("embo")/12;
-    const stipend=eurMonthly*num("eurusd")*(1-num("fee")/100);
-    const income=stipend+($("spouseWorks").checked?num("spouseIncome"):0);
-    const ilsTotal=num("ilsCard")+num("ilsLoan");
-    const israel=(ilsTotal/num("usdils"))*(1+num("fee")/100);
-    const living=livingCats.reduce((s,c)=>s+(Number(c.value)||0),0);
-    const rent=num("rent");
-    const expenses=rent+living+israel;
-    return {eurMonthly,stipend,income,israel,ilsTotal,living,rent,expenses,surplus:income-expenses};
+    const spent=livingCats.reduce((s,c)=>s+(Number(c.value)||0),0);
+    const budget=livingCats.reduce((s,c)=>s+(Number(c.budget)||0),0);
+    return {budget,spent,balance:budget-spent};
   }
   function expenseSlices(){
-    const d=compute();
-    const arr=[{name:'שכר דירה',value:d.rent,color:'#2A4A54'}];
-    livingCats.forEach((c,i)=>arr.push({name:c.name||'—',value:Number(c.value)||0,color:LIVING_RAMP[i%LIVING_RAMP.length]}));
-    arr.push({name:'החזר לישראל',value:d.israel,color:'#C98A3B'});
-    return arr;
+    return livingCats.map((c,i)=>({name:c.name||'—',value:Number(c.budget)||0,color:LIVING_RAMP[i%LIVING_RAMP.length]}));
   }
   function recompute(){
-    const d=compute(), pos=d.surplus>=0, denom=Math.max(d.income,d.expenses,1);
-    const w=x=>(x/denom*100)+"%";
-    $("oInc").textContent=usd(d.income);
-    $("oExp").textContent=usd(d.expenses);
-    $("oSur").textContent=usd(d.surplus);
-    $("oSur").style.color=pos?"var(--teal)":"var(--deficit)";
-    $("resLbl").textContent=pos?"פנוי לחיסכון / חודש":"גירעון / חודש";
+    const d=compute(), pos=d.balance>=0;
+    $("oBudget").textContent=usd(d.budget);
+    $("oSpent").textContent=usd(d.spent);
+    $("oBal").textContent=usd(d.balance);
+    $("oBal").style.color=pos?"var(--teal)":"var(--deficit)";
+    $("resLbl").textContent="יתרה / חודש";
     $("resBox").style.background=pos?"#EAF3F1":"#F6E9E6";
-    $("oYear").textContent=usd(d.surplus*12)+" לשנה";
-    $("bRent").style.width=w(d.rent);
-    $("bLiving").style.width=w(d.living);
-    $("bIsrael").style.width=w(d.israel);
-    $("bLast").style.width=w(Math.abs(d.surplus));
-    $("bLast").style.background=pos?"var(--teal)":"var(--deficit)";
-    $("kLast").style.background=pos?"var(--teal)":"var(--deficit)";
-    $("kLastT").textContent=pos?"חיסכון":"חריגה";
-    $("oFee").textContent=num("fee")+"%";
-    $("oRent").textContent=usd(d.rent);
-    $("hEmbo").textContent=eur(d.eurMonthly)+" לחודש";
-    $("hStipend").textContent="מלגה אחרי המרה ≈ "+usd(d.stipend)+" / חודש";
-    $("ilsTotal").textContent="₪"+d.ilsTotal.toLocaleString("en-US")+" לחודש";
-    $("hIsrael").textContent="≈ "+usd(d.israel)+" לחודש (כולל עמלה)";
-    $("spouseWrap").style.display=$("spouseWorks").checked?"block":"none";
-    const h=$("hRent");
-    if(d.rent<=2600){h.textContent="טווח סטודיו / דיור מסובסד של UCSF — מרווח נוח";h.style.color="var(--teal)";}
-    else if(d.rent<=3500){h.textContent="מתחת ל‑$3,500 — מאוזן";h.style.color="var(--teal)";}
-    else{h.textContent="מעל $3,500 — לחוץ; שקול שכונה חיצונית או דיור אקדמי";h.style.color="var(--deficit)";}
+    const denom=Math.max(d.budget,d.spent,1), over=d.spent>d.budget;
+    $("bSpent").style.width=((over?d.budget:d.spent)/denom*100)+"%";
+    $("bSpent").style.background="var(--teal)";
+    $("bRemain").style.width=((over?(d.spent-d.budget):(d.budget-d.spent))/denom*100)+"%";
+    $("bRemain").style.background=over?"var(--deficit)":"#C7D6D2";
+    $("dRemain").style.background=over?"var(--deficit)":"#C7D6D2";
+    $("lRemain").textContent=over?"חריגה":"נשאר";
     drawLivePie();
     saveSettings();
   }
@@ -408,6 +343,19 @@
     const del=document.createElement('button'); del.type='button'; del.className='catdel'; del.textContent='✕';
     del.addEventListener('click',()=>deleteCat(c.id));
     nrow.appendChild(name); nrow.appendChild(fixedLbl); nrow.appendChild(del);
+
+    const r1=document.createElement('div'); r1.className='catrow2';
+    const bbox=document.createElement('div'); bbox.className='catbox';
+    bbox.innerHTML='<div class="caplbl">תקציב קטגוריה</div>';
+    const budget=document.createElement('input'); budget.type='number'; budget.className='catbudget';
+    budget.value=(c.budget!=null?c.budget:0); budget.setAttribute('inputmode','decimal');
+    bbox.appendChild(budget);
+    const rembox=document.createElement('div'); rembox.className='catbox';
+    rembox.innerHTML='<div class="caplbl">שארית התקציב</div>';
+    const rem=document.createElement('div'); rem.className='catupdated';
+    rembox.appendChild(rem);
+    r1.appendChild(bbox); r1.appendChild(rembox);
+
     const r2=document.createElement('div'); r2.className='catrow2';
     const dbox=document.createElement('div'); dbox.className='catbox';
     dbox.innerHTML='<div class="caplbl">סכום לשינוי</div>';
@@ -422,12 +370,18 @@
     ubox.innerHTML='<div class="caplbl">סה״כ מעודכן</div>';
     const upd=document.createElement('div'); upd.className='catupdated'; upd.textContent=comma(c.value);
     ubox.appendChild(upd);
+
+    const updateRemain=()=>{ const rv=(Number(c.budget)||0)-(Number(c.value)||0);
+      rem.textContent=comma(rv); rem.style.color=rv<0?'var(--deficit)':'var(--ink)'; };
+    budget.addEventListener('input',()=>{ c.budget=parseFloat(budget.value)||0; updateRemain(); recompute(); });
     const apply=(sign)=>{ const dv=parseFloat(delta.value)||0;
-      c.value=Math.max(0,(Number(c.value)||0)+sign*dv); upd.textContent=comma(c.value); delta.value=''; recompute(); };
+      c.value=Math.max(0,(Number(c.value)||0)+sign*dv); upd.textContent=comma(c.value); updateRemain(); delta.value=''; recompute(); };
     plus.addEventListener('click',()=>apply(1));
     minus.addEventListener('click',()=>apply(-1));
+    updateRemain();
+
     r2.appendChild(dbox); r2.appendChild(pm); r2.appendChild(ubox);
-    cell.appendChild(nrow); cell.appendChild(r2);
+    cell.appendChild(nrow); cell.appendChild(r1); cell.appendChild(r2);
     return cell;
   }
   function renderCats(){
@@ -474,7 +428,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='#182524'; ctx.font='700 22px -apple-system,Arial,sans-serif'; ctx.fillText(usd(total),cx,cy-6);
-    ctx.fillStyle='#5E6E6B'; ctx.font='400 12px -apple-system,Arial,sans-serif'; ctx.fillText('סה״כ הוצאות',cx,cy+14);
+    ctx.fillStyle='#5E6E6B'; ctx.font='400 12px -apple-system,Arial,sans-serif'; ctx.fillText('תקציב',cx,cy+14);
     ctx.textBaseline='alphabetic';
   }
   function drawLivePie(){
@@ -493,27 +447,23 @@
   }
 
   // ---------- history / tracking ----------
-  function cats(e){
-    const pos=e.surplus>=0;
-    return [['var(--rent)','דיור',e.rent],['var(--living)','מחיה',e.living],
-            ['var(--israel)','החזר לישראל',e.israel],
-            [pos?'var(--teal)':'var(--deficit)',pos?'חיסכון':'חריגה',Math.abs(e.surplus)]];
-  }
   function barEl(e){
-    const denom=Math.max(e.income,e.expenses,1);
+    const tb=e.totalBudget||0, sp=e.spent||0, denom=Math.max(tb,sp,1), over=sp>tb;
     const bar=document.createElement('div'); bar.className='bar';
-    cats(e).forEach(([c,,v])=>{ const s=document.createElement('div'); s.style.width=(v/denom*100)+'%'; s.style.background=c; bar.appendChild(s); });
+    const s1=document.createElement('div'); s1.style.background='var(--teal)';
+    s1.style.width=((over?tb:sp)/denom*100)+'%';
+    const s2=document.createElement('div'); s2.style.background=over?'var(--deficit)':'#C7D6D2';
+    s2.style.width=((over?(sp-tb):(tb-sp))/denom*100)+'%';
+    bar.appendChild(s1); bar.appendChild(s2);
     return bar;
   }
   function valuesEl(e){
-    const eu=e.eurUsd||1.14, ui=e.usdIls||3.05;
-    const g=document.createElement('div'); g.className='vgrid';
-    cats(e).forEach(([col,name,u])=>{
+    const g=document.createElement('div'); g.className='vgrid'; g.style.gridTemplateColumns='repeat(3,1fr)';
+    const bpos=(e.balance||0)>=0;
+    [['תקציב',e.totalBudget||0,'var(--ink)'],['הוצא',e.spent||0,'var(--ink)'],
+     ['יתרה',e.balance||0,bpos?'var(--teal)':'var(--deficit)']].forEach(([lab,val,col])=>{
       const cell=document.createElement('div'); cell.className='vcell';
-      cell.innerHTML='<div class="vname"><span class="vdot" style="background:'+col+'"></span>'+name+'</div>'
-        +'<div class="vnum">$'+fmt(u)+'</div>'
-        +'<div class="vnum vmut">₪'+fmt(u*ui)+'</div>'
-        +'<div class="vnum vmut">€'+fmt(u/eu)+'</div>';
+      cell.innerHTML='<div class="vname">'+lab+'</div><div class="vnum" style="color:'+col+';font-weight:700">'+usd(val)+'</div>';
       g.appendChild(cell);
     });
     return g;
@@ -527,8 +477,8 @@
       const left=document.createElement('div');
       left.innerHTML='<div class="monthlabel">'+e.label+'</div><div class="monthdate">נשמר '+e.dateStr+'</div>';
       const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center';
-      const pos=e.surplus>=0;
-      right.innerHTML='<span class="monthsur mono" style="color:'+(pos?'var(--teal)':'var(--deficit)')+'">'+usd(e.surplus)+'</span>';
+      const pos=(e.balance||0)>=0;
+      right.innerHTML='<span class="monthsur mono" style="color:'+(pos?'var(--teal)':'var(--deficit)')+'">'+usd(e.balance||0)+'</span>';
       const db2=document.createElement('button'); db2.className='del'; db2.type='button'; db2.textContent='מחק';
       db2.addEventListener('click',()=>deleteMonth(e.id));
       right.appendChild(db2);
@@ -551,11 +501,11 @@
       id:Date.now(), ym,
       label:heMonths[now.getMonth()]+' '+now.getFullYear(),
       dateStr:now.getDate()+'.'+(now.getMonth()+1)+'.'+now.getFullYear(),
-      income:d.income, expenses:d.expenses, rent:d.rent, living:d.living, israel:d.israel, surplus:d.surplus,
-      eurUsd:num('eurusd'), usdIls:num('usdils'), ilsTotal:d.ilsTotal,
+      totalBudget:d.budget, spent:d.spent, balance:d.balance,
+      cats:livingCats.map(c=>({name:c.name,budget:Number(c.budget)||0,value:Number(c.value)||0})),
       slices:expenseSlices().filter(s=>s.value>0).map(s=>({name:s.name,value:s.value,color:s.color}))
     };
-    const catsSnapshot=JSON.parse(JSON.stringify(livingCats));
+        const catsSnapshot=JSON.parse(JSON.stringify(livingCats));
     const idx=hist.findIndex(e=>e.ym===ym);
     let undoFn;
     if(idx>=0){
@@ -586,14 +536,14 @@
   function rrect(x,px,py,w,h,r){x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);
     x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath();}
   function reportDataURL(e){
-    const W=1080,LM=100,RM=W-100,BW=W-200,pos=e.surplus>=0;
-    const eu=e.eurUsd||1.14, ui=e.usdIls||3.05;
+    const W=1080,LM=100,RM=W-100,BW=W-200;
+    const pos=(e.balance||0)>=0;
     const slices=(e.slices&&e.slices.length)?e.slices:[];
     const total=slices.reduce((a,s)=>a+s.value,0);
     const legRows=Math.ceil(slices.length/2);
-    const pieTitleY=1000, donutR=150, donutCy=pieTitleY+40+donutR;
+    const pieTitleY=820, donutR=150, donutCy=pieTitleY+40+donutR;
     const legStartY=donutCy+donutR+50;
-    const H=slices.length ? (legStartY+legRows*46+90) : 1180;
+    const H=slices.length ? (legStartY+legRows*46+90) : 1000;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const x=c.getContext('2d'); if(!x) return ''; try{x.direction='rtl';}catch(_){}
     x.fillStyle='#E9EDEC';x.fillRect(0,0,W,H);
@@ -605,37 +555,28 @@
     x.fillText('תאריך: '+e.label+' · נשמר '+e.dateStr,RM,262);
     rrect(x,100,300,BW,180,20);x.fillStyle=pos?'#EAF3F1':'#F6E9E6';x.fill();
     x.textAlign='right';x.fillStyle='#5E6E6B';x.font='500 30px -apple-system,Arial,sans-serif';
-    x.fillText(pos?'פנוי לחיסכון לחודש':'גירעון לחודש',RM-30,372);
+    x.fillText(pos?'יתרה לחודש':'חריגה מהתקציב',RM-30,372);
     x.fillStyle=pos?'#137567':'#B4432E';x.font='700 82px -apple-system,Arial,sans-serif';
-    x.fillText(usd(e.surplus),RM-30,456);
+    x.fillText(usd(e.balance||0),RM-30,456);
     x.textAlign='left';x.fillStyle='#5E6E6B';x.font='400 26px -apple-system,Arial,sans-serif';
-    x.fillText(usd(e.surplus*12)+' לשנה',LM+30,456);
+    x.fillText('מתוך '+usd(e.totalBudget||0),LM+30,456);
     let y=560;
     x.textAlign='right';x.fillStyle='#5E6E6B';x.font='500 28px -apple-system,Arial,sans-serif';
-    x.fillText('הכנסה נטו לחודש',RM,y);
-    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.income),RM,y+52);
+    x.fillText('תקציב כולל',RM,y);
+    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.totalBudget||0),RM,y+52);
     x.textAlign='left';x.fillStyle='#5E6E6B';x.font='500 28px -apple-system,Arial,sans-serif';
-    x.fillText('הוצאות לחודש',LM,y);
-    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.expenses),LM,y+52);
-    const by=700,bh=34,denom=Math.max(e.income,e.expenses,1);
+    x.fillText('הוצא בפועל',LM,y);
+    x.fillStyle='#182524';x.font='600 46px -apple-system,Arial,sans-serif';x.fillText(usd(e.spent||0),LM,y+52);
+    const by=680,bh=34, tb=e.totalBudget||0, sp=e.spent||0, denom=Math.max(tb,sp,1), over=sp>tb;
     x.save();rrect(x,LM,by,BW,bh,17);x.clip();
-    let cx=RM;
-    const segs=[['#2A4A54',e.rent],['#7A9A93',e.living],['#C98A3B',e.israel],[pos?'#137567':'#B4432E',Math.abs(e.surplus)]];
-    segs.forEach(([col,v])=>{const w=v/denom*BW;x.fillStyle=col;x.fillRect(cx-w,by,w,bh);cx-=w;});
+    const spW=(over?tb:sp)/denom*BW;
+    x.fillStyle='#137567';x.fillRect(RM-spW,by,spW,bh);
+    const tailW=(over?(sp-tb):(tb-sp))/denom*BW;
+    x.fillStyle=over?'#B4432E':'#C7D6D2';x.fillRect(RM-spW-tailW,by,tailW,bh);
     x.restore();
-    const names=['דיור','מחיה','ישראל',pos?'חיסכון':'חריגה'];
-    const colW=BW/4, gy=by+bh+50;
-    segs.forEach(([col,v],i)=>{
-      const ctr=RM-colW*i-colW/2;
-      x.fillStyle=col;x.beginPath();x.arc(ctr,gy-14,9,0,Math.PI*2);x.fill();
-      x.textAlign='center';x.fillStyle=col;x.font='700 27px -apple-system,Arial,sans-serif';x.fillText(names[i],ctr,gy+26);
-      x.fillStyle='#182524';x.font='600 28px -apple-system,Arial,sans-serif';x.fillText('$'+fmt(v),ctr,gy+72);
-      x.fillStyle='#5E6E6B';x.font='400 27px -apple-system,Arial,sans-serif';
-      x.fillText('₪'+fmt(v*ui),ctr,gy+108); x.fillText('€'+fmt(v/eu),ctr,gy+144);
-    });
     if(slices.length){
       x.fillStyle='#182524';x.textAlign='right';x.font='600 34px -apple-system,Arial,sans-serif';
-      x.fillText('התפלגות כלל ההוצאות',RM,pieTitleY);
+      x.fillText('התפלגות התקציב',RM,pieTitleY);
       const dcx=W/2, inner=95; let a=-Math.PI/2;
       slices.forEach(s=>{ const ang=s.value/total*Math.PI*2;
         x.beginPath();x.moveTo(dcx,donutCy);x.arc(dcx,donutCy,donutR,a,a+ang);x.closePath();
@@ -643,7 +584,7 @@
       x.beginPath();x.arc(dcx,donutCy,inner,0,Math.PI*2);x.fillStyle='#fff';x.fill();
       x.textAlign='center';x.textBaseline='middle';
       x.fillStyle='#182524';x.font='700 42px -apple-system,Arial,sans-serif';x.fillText(usd(total),dcx,donutCy-8);
-      x.fillStyle='#5E6E6B';x.font='400 24px -apple-system,Arial,sans-serif';x.fillText('סה״כ הוצאות',dcx,donutCy+30);
+      x.fillStyle='#5E6E6B';x.font='400 24px -apple-system,Arial,sans-serif';x.fillText('תקציב',dcx,donutCy+30);
       x.textBaseline='alphabetic';
       slices.forEach((s,i)=>{
         const col=i%2, rowi=Math.floor(i/2);
@@ -655,7 +596,7 @@
       });
     }
     x.textAlign='right';x.fillStyle='#8A9794';x.font='400 24px -apple-system,Arial,sans-serif';
-    x.fillText('אומדן לתכנון בלבד · לא ייעוץ פיננסי',RM,H-50);
+    x.fillText('אומדני תקציב לתכנון בלבד · לא ייעוץ פיננסי',RM,H-50);
     return c.toDataURL('image/png');
   }
   function dataURLtoBlob(d){
@@ -706,10 +647,6 @@
   $('addCat').addEventListener('click',addCat);
   $('ovClose').addEventListener('click',()=>{ pendingUndo=null; $('overlay').classList.remove('show'); });
   $('ovUndo').addEventListener('click',()=>{ if(pendingUndo) pendingUndo(); pendingUndo=null; $('overlay').classList.remove('show'); });
-  ['embo','eurusd','fee','spouseIncome','ilsCard','ilsLoan','usdils','rent'].forEach(id=>{
-    const el=$(id); if(el){ el.addEventListener('input',recompute); el.addEventListener('change',recompute); }
-  });
-  $('spouseWorks').addEventListener('change',recompute);
 
   // init
   const now=new Date();
